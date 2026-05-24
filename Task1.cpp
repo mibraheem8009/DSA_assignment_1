@@ -3,6 +3,7 @@
 #include <vector>
 #include <stack>
 #include <cctype>
+#include <map>
 using namespace std;
 bool Operator(string token)
 {
@@ -21,8 +22,9 @@ bool rightbracket(string token)
 struct Token
 {
     string variable;
-    int val;
-    Token(string variable, int val = 0) : variable(variable), val(val) {}
+    // int val;
+    // Token(string variable, int val = 0) : variable(variable), val(val) {}
+    Token(string variable) : variable(variable) {}
 };
 
 bool exists(string var, vector<Token> vars)
@@ -34,10 +36,10 @@ bool exists(string var, vector<Token> vars)
     }
     return false;
 }
-bool Tokenization(vector<string> &v, vector<Token> &variables)
+void Tokenization(vector<string> &v, vector<Token> &variables)
 {
     string input;
-    cerr << "enter expresion: ";
+    // cerr << "enter expresion: ";
     getline(cin, input);
     for (int i = 0; i < input.size(); i++)
     {
@@ -59,7 +61,7 @@ bool Tokenization(vector<string> &v, vector<Token> &variables)
                 if (!(Operator(string(1, next)) || leftbracket(string(1, next)) || rightbracket(string(1, next)) || isspace(next)))
                 {
                     cerr << "invalid input expression\n";
-                    return false;
+                    exit(1);
                 }
             }
             v.push_back(num);
@@ -93,16 +95,16 @@ bool Tokenization(vector<string> &v, vector<Token> &variables)
         else
         {
             cerr << "Invalid character: " << c << endl;
-            return false;
+            exit(1);
         }
     }
-    return true;
+    // return true;
 }
-int presidence(char c)
+int presidence(string c)
 {
-    if (c == '*' || c == '/')
+    if (c == "*" || c == "/")
         return 2;
-    else if (c == '-' || c == '+')
+    else if (c == "-" || c == "+")
         return 1;
     return 0;
 }
@@ -117,7 +119,7 @@ string bracketmatch(string right)
         return "{";
     return "";
 }
-bool inToPost(vector<string> infix, vector<string> &post)
+void inToPost(vector<string> infix, vector<string> &post)
 {
     stack<string> opStack;
 
@@ -131,11 +133,9 @@ bool inToPost(vector<string> infix, vector<string> &post)
         }
         else if (Operator(token))
         {
-            char currentOp = token[0];
             while (!opStack.empty() && Operator(opStack.top()))
             {
-                char topOp = opStack.top()[0];
-                if (presidence(topOp) >= presidence(currentOp))
+                if (presidence(opStack.top()) >= presidence(token))
                 {
                     post.push_back(opStack.top());
                     opStack.pop();
@@ -167,20 +167,20 @@ bool inToPost(vector<string> infix, vector<string> &post)
                 }
                 else
                 {
-                    cerr<< "Mismatched parentheses: expected " << expected<< " but found " << opStack.top() << endl;
-                    return false;
+                    cerr << "Mismatched parentheses: expected " << expected << " but found " << opStack.top() << endl;
+                    exit(1);
                 }
             }
             else
             {
                 cerr << "Unmatched right bracket: " << token << endl;
-                return false;
+                exit(1);
             }
         }
         else
         {
             cerr << "Unknown token: " << token << endl;
-            return false;
+            exit(1);
         }
     }
     while (!opStack.empty())
@@ -188,30 +188,106 @@ bool inToPost(vector<string> infix, vector<string> &post)
         if (leftbracket(opStack.top()))
         {
             cerr << "Unmatched left bracket: " << opStack.top() << endl;
-            return false;
+            exit(1);
         }
         post.push_back(opStack.top());
         opStack.pop();
     }
 
-    return true;
+    // return true;
+}
+void variableInput(vector<Token> input, map<string, int> &varMap)
+{
+    for (int i = 0; i < input.size(); i++)
+    {
+        int val;
+        cerr << "Enter val for " << input[i].variable << ": ";
+        cin >> val;
+        varMap[input[i].variable] = val;
+    }
+}
+int postToEval(vector<string> post, map<string, int> varmap)
+{
+    stack<int> st;
+    for (int i = 0; i < post.size(); i++)
+    {
+        string token = post[i];
+
+        if (isdigit(token[0]))
+        {
+            st.push(stoi(token));
+        }
+        else if (isalpha(token[0]) || token[0] == '_')
+        {
+            st.push(varmap[token]);
+        }
+        else if (Operator(token))
+        {
+            if (st.size() < 2)
+            {
+                cerr << "Logical error: insufficient operands" << endl;
+                exit(3);
+            }
+            int b = st.top();
+            st.pop();
+            int a = st.top();
+            st.pop();
+            int result;
+            if (token == "+")
+                result = a + b;
+            else if (token == "-")
+                result = a - b;
+            else if (token == "*")
+                result = a * b;
+            else if (token == "/")
+            {
+                if (b == 0)
+                {
+                    cerr << "Runtime error: division by zero" << endl;
+                    exit(2);
+                }
+                result = a / b;
+            }
+            else
+            {
+                cerr << "Logical error: unknown operator" << endl;
+                exit(3);
+            }
+            st.push(result);
+        }
+        else
+        {
+            cerr << "Logical error: invalid token in postfix" << endl;
+            exit(3);
+        }
+    }
+
+    if (st.size() != 1)
+    {
+        cerr << "Logical error: invalid expression" << endl;
+        exit(3);
+    }
+    return st.top();
 }
 int main()
 {
-    int t;
-    cerr << "enter number of test cases: ";
-    cin >> t;
-    cin.ignore();
-    while (t--)
-    {
+   
         vector<string> v;
         vector<Token> variables;
         vector<string> post;
-        if (Tokenization(v, variables))
+        map<string, int> varmap;
+        Tokenization(v, variables);
+
+        inToPost(v, post);
+        variableInput(variables, varmap);
+        for (int i = 0; i < post.size(); i++)
         {
-            if (inToPost(v, post))
-            {
-            }
+            if (i != 0)
+                cout << " ";
+            cout << post[i];
         }
-    }
+        cout << endl;
+        cout << postToEval(post, varmap) << endl;
+    
+    exit(0);
 }
