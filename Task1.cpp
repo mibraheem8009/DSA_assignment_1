@@ -202,7 +202,11 @@ void variableInput(vector<Token> input, map<string, int> &varMap)
     {
         int val;
         cerr << "Enter val for " << input[i].variable << ": ";
-        cin >> val;
+        while (!(cin >> val))
+        {
+            cerr << "Error non integer input expected integer ";
+            exit(2);
+        }
         varMap[input[i].variable] = val;
     }
 }
@@ -225,7 +229,7 @@ int postToEval(vector<string> post, map<string, int> varmap)
         {
             if (st.size() < 2)
             {
-                cerr << "Logical error: insufficient operands" << endl;
+                cerr << "insufficient operands" << endl;
                 exit(3);
             }
             int b = st.top();
@@ -243,51 +247,51 @@ int postToEval(vector<string> post, map<string, int> varmap)
             {
                 if (b == 0)
                 {
-                    cerr << "Runtime error: division by zero" << endl;
+                    cerr << "error division by zero" << endl;
                     exit(2);
                 }
                 result = a / b;
             }
             else
             {
-                cerr << "Logical error: unknown operator" << endl;
+                cerr << " unknown operator" << endl;
                 exit(3);
             }
             st.push(result);
         }
         else
         {
-            cerr << "Logical error: invalid token in postfix" << endl;
+            cerr << "invalid token in postfix" << endl;
             exit(3);
         }
     }
 
     if (st.size() != 1)
     {
-        cerr << "Logical error: invalid expression" << endl;
+        cerr << "invalid expression" << endl;
         exit(3);
     }
     return st.top();
 }
 int main()
 {
-   
-        vector<string> v;
-        vector<Token> variables;
-        vector<string> post;
-        map<string, int> varmap;
-        Tokenization(v, variables);
 
-        inToPost(v, post);
-        variableInput(variables, varmap);
-        for (int i = 0; i < post.size(); i++)
-        {
-            if (i != 0)
-                cout << " ";
-            cout << post[i];
-        }
-        cout << endl;
-        cout << postToEval(post, varmap) << endl;
-    
+    vector<string> v;
+    vector<Token> variables;
+    vector<string> post;
+    map<string, int> varmap;
+    Tokenization(v, variables);
+
+    inToPost(v, post);
+    variableInput(variables, varmap);
+    for (int i = 0; i < post.size(); i++)
+    {
+        if (i != 0)
+            cout << " ";
+        cout << post[i];
+    }
+    cout << endl;
+    cout << postToEval(post, varmap) << endl;
+
     exit(0);
 }
